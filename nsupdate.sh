@@ -27,7 +27,19 @@
 # from which site should we get your wan ip?
 IP_CHECK_SITE=http://checkip.dyndns.org
 
-source $(dirname $0)/nsupdate.config
+# First param of script is the name of the config file
+# This is especially handy when multiple DNS entries should be updated
+# E.g.:
+# ./nsupdate.sh mydomain.config
+# ./nsupdate.sh myotherdomain.config
+CONFIG_FILE=$1
+
+if [ -z "$CONFIG_FILE" ]; then
+   # Use default config file if nothing is passed
+   CONFIG_FILE="nsupdate.config"
+fi
+
+source $(dirname $0)/$CONFIG_FILE
 
 LOG=$0.log
 IP_REGEX="\<[[:digit:]]{1,3}(\.[[:digit:]]{1,3}){3}\>"
