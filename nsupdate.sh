@@ -30,9 +30,10 @@ IP_CHECK_SITE=http://checkip.dyndns.org
 source $(dirname $0)/nsupdate.config
 
 LOG=$0.log
+IP_REGEX="\<[[:digit:]]{1,3}(\.[[:digit:]]{1,3}){3}\>"
 
-NSLOOKUP=$(nslookup -sil $HOSTNAME - ns.inwx.de | tail -2 | head -1 | cut -d' ' -f2)
-WAN_IP=`curl -s ${IP_CHECK_SITE}| grep -Eo '\<[[:digit:]]{1,3}(\.[[:digit:]]{1,3}){3}\>'`
+NSLOOKUP=$(nslookup -sil $HOSTNAME - ns.inwx.de | tail -2 | head -1 | cut -d' ' -f2 | grep -Eo "$IP_REGEX")
+WAN_IP=$(curl -s $IP_CHECK_SITE | grep -Eo "$IP_REGEX")
 
 API_XML="<?xml version=\"1.0\"?>
 <methodCall>
@@ -70,6 +71,16 @@ API_XML="<?xml version=\"1.0\"?>
       </param>
    </params>
 </methodCall>"
+
+if [ -z "$WAN_IP" ]; then
+   echo "$(date) - Could not retrieve WAN IP" >> $LOG
+   exit
+fi
+
+if [ -z "$NSLOOKUP" ]; then
+   echo "$(date) - Could not resolve $HOSTNAME" >> $LOG
+   exit
+fi
 
 if [ ! "$NSLOOKUP" == "$WAN_IP" ]; then
 	curl -silent -v -XPOST -H"Content-Type: application/xml" -d "$API_XML" https://api.domrobot.com/xmlrpc/
